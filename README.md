@@ -1,1 +1,1 @@
-[sulfurous.github.io](https://mittagskogel.github.io/)
+[sulfurous.github.io](http://mittagskogel.github.io/)
