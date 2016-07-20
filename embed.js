@@ -17,7 +17,7 @@
   var iframe = document.createElement('iframe');
   iframe.setAttribute('allowfullscreen', true);
   iframe.setAttribute('allowtransparency', true);
-  iframe.src = script.src.replace(/^https:/, 'https:').replace(/embed\.js/, 'embed.html');
+  iframe.src = script.src.replace(/^https:/, 'http:').replace(/embed\.js/, 'embed.html');
   //width: 482, height: 393
   //976, 768
   iframe.width = hasUI ? 976 : 960;

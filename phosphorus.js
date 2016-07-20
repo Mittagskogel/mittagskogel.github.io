@@ -170,8 +170,8 @@ var P = (function() {
 
   var IO = {};
 
-  IO.PROJECT_URL = 'https://projects.scratch.mit.edu/internalapi/project/';
-  IO.ASSET_URL = 'https://cdn.assets.scratch.mit.edu/internalapi/asset/';
+  IO.PROJECT_URL = 'http://projects.scratch.mit.edu/internalapi/project/';
+  IO.ASSET_URL = 'http://cdn.assets.scratch.mit.edu/internalapi/asset/';
   IO.SOUNDBANK_URL = 'https://cdn.rawgit.com/LLK/scratch-flash/v429/src/soundbank/';
 
   IO.FONTS = {
@@ -183,7 +183,7 @@ var P = (function() {
   };
 
   IO.LINE_HEIGHTS = {
-    Helvetica: 1.13,
+    'Helvetica': 1.13,
     'Donegal One': 1.25,
     'Gloria Hallelujah': 1.97,
     'Permanent Marker': 1.43,
@@ -218,7 +218,7 @@ var P = (function() {
       if (xhr.status === 200) {
         request.load(xhr.response);
       } else {
-        request.error(new Error('HTTPS ' + xhr.status + ': ' + xhr.statusText));
+        request.error(new Error('HTTP ' + xhr.status + ': ' + xhr.statusText));
       }
     };
     xhr.onerror = function() {
@@ -292,7 +292,7 @@ var P = (function() {
     var request = new CompositeRequest;
 
     request.defer = true;
-    request.add(P.IO.load('https://crossorigin.me/https://scratch.mit.edu/projects/' + id + '/').onLoad(function(data) {
+    request.add(P.IO.load('http://crossorigin.me/http://scratch.mit.edu/projects/' + id + '/').onLoad(function(data) {
       var m = /<title>\s*(.+?)(\s+on\s+Scratch)?\s*<\/title>/.exec(data);
       if (callback) request.onLoad(callback.bind(self));
       if (m) {
@@ -608,7 +608,7 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
   IO.fixSVG = function(svg, element) {
     if (element.nodeType !== 1) return element;
     if (element.nodeName.slice(0, 4).toLowerCase() === 'svg:') {
-      var newElement = document.createElementNS('https://www.w3.org/2000/svg', element.localName);
+      var newElement = document.createElementNS('http://www.w3.org/2000/svg', element.localName);
       var attributes = element.attributes;
       var newAttributes = newElement.attributes;
       for (var i = attributes.length; i--;) {
@@ -621,20 +621,23 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
     }
     if (element.nodeName === 'text') {
       var font = element.getAttribute('font-family') || '';
-      font = IO.FONTS[font] || font;
+      //Using only Helvetica for now because I can't figure out why the others aren't rendering on canvas.
+      //Some text will be misaligned.
+      font = 'Helvetica';//IO.FONTS[font] || font;
       if (font) {
-        element.setAttribute('font-family', font);
+        //element.setAttribute('font-family', font);
+        element.style['font-family'] = font;
         if (font === 'Helvetica') element.style.fontWeight = 'bold';
       }
       var size = +element.getAttribute('font-size');
       if (!size) {
         element.setAttribute('font-size', size = 18);
       }
-      var bb = element.getBBox();
-      var x = 4 - .6 * element.transform.baseVal.consolidate().matrix.a;
-      var y = (element.getAttribute('y') - bb.y) * 1.1;
-      element.setAttribute('x', x);
-      element.setAttribute('y', y);
+
+      //TODO: Find out what actual values have to be put here.
+      element.setAttribute('x', 5);
+      element.setAttribute('y', size*IO.LINE_HEIGHTS[font]);
+      
       var lines = element.textContent.split('\n');
       if (lines.length > 1) {
         element.textContent = lines[0];
@@ -642,8 +645,8 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
         for (var i = 1, l = lines.length; i < l; i++) {
           var tspan = document.createElementNS(null, 'tspan');
           tspan.textContent = lines[i];
-          tspan.setAttribute('x', x);
-          tspan.setAttribute('y', y + size * i * lineHeight);
+          tspan.setAttribute('x', 1);//x);
+          tspan.setAttribute('y', 26+i*lineHeight*size);//y + size * i * lineHeight);
           element.appendChild(tspan);
         }
       }
@@ -676,16 +679,18 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
         //div.innerHTML = source.replace(/(<\/?)svg:/g, '$1');
         //var svg = div.firstElementChild;		
         var svg = new DOMParser().parseFromString(source, 'image/svg+xml').firstElementChild;
-        if(svg.getAttribute('width') === '0' && svg.getAttribute('height') === '0'){
-          svg = document.createElementNS('https://www.w3.org/2000/svg', svg.localName);
+        if(svg.getAttribute('width') === '0' || svg.getAttribute('height') === '0'){
+          svg = document.createElementNS('http://www.w3.org/2000/svg', svg.localName);
         }
         else svg = IO.fixSVG(svg, svg);
         
-        svg.style.visibility = 'hidden';
-        //svg.style.visibility = 'collapse';
-        svg.style.position = 'absolute';
-        svg.style.left = '-10000px';
-        svg.style.top = '-10000px';
+        //svg.style.visibility = 'hidden';
+        //svg.style.position = 'absolute';
+        //svg.style.left = '-10000px';
+        //svg.style.top = '-10000px';
+        svg.style.width = 0;
+        svg.style.height = 0;
+
         document.body.appendChild(svg);
         var viewBox = svg.viewBox.baseVal;
         if (viewBox && (viewBox.x || viewBox.y)) {
@@ -703,7 +708,7 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
         //while (div.firstChild) div.removeChild(div.lastChild);
         //div.appendChild(svg);
         //svg.style.visibility = 'visible';
-        svg.style.cssText = '';
+        //svg.style.cssText = '';
 		
         //var canvas = document.createElement('canvas');
         var request = new Request;
@@ -733,7 +738,7 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
           //console.error(e, image);
           //console.log(image.src);
           console.error(md5, image.src);
-		    request.error(new Error());
+          request.error(new Error());
         };
         IO.projectRequest.add(request);		
       };
@@ -1457,6 +1462,7 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
     this.visible = true;
 
     this.Hue = 240;
+    this.penHue = 250;
     this.penSaturation = 100;
     this.penLightness = 50;
 
@@ -1600,7 +1606,7 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
 	  context.fillRect(240 + x - this.penSize/2, 180 - y - this.penSize/2, this.penSize, this.penSize);
 	}
 	else{
-	  context.beginPath();
+	   context.beginPath();
       context.arc(240 + x, 180 - y, this.penSize / 2, 0, 2 * Math.PI, false);
       context.fill();
 	}
@@ -1681,7 +1687,7 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
         costumeCanvas.parentNode.removeChild(costumeCanvas);           
         */
       
-      
+        
         if(this.filters.pixelate !== 0){
         
         var pixelCanvas = document.createElement('canvas');
@@ -1699,6 +1705,7 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
         pixelContext.drawImage(effectsCanvas, 0, 0, pixelCanvas.width, pixelCanvas.height);
         
         costumeContext.imageSmoothingEnabled = false;
+        costumeContext.mozImageSmoothingEnabled = false;
         costumeContext.drawImage(pixelCanvas, 0, 0, costumeCanvas.width, costumeCanvas.height);
         
         effectsContext.clearRect(0, 0, effectsCanvas.width, effectsCanvas.height);       
