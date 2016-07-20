@@ -37,7 +37,7 @@
 
 <div class=title>
   <div class=progress-bar></div>
-  <input class=url value=http://scratch.mit.edu/projects/>
+  <input class=url value=https://scratch.mit.edu/projects/>
   <a target=_blank class=project-link title="View project on Scratch"></a>
 </div>
 
@@ -87,10 +87,10 @@
   'use strict';
 
   if (location.protocol === 'https:') {
-    location.replace(('' + location).replace(/^https:/, 'http:'));
+    location.replace(('' + location).replace(/^https:/, 'https:'));
   }
 
-  var prefix = 'http://scratch.mit.edu/projects/';
+  var prefix = 'https://scratch.mit.edu/projects/';
 
   var initialId = location.hash.substr(1);
   if (initialId === 'zip') initialId = '';
@@ -195,7 +195,7 @@
   }
 
   function updateBugLink() {
-    bugLink.href = P.player.projectId ? 'https://github.com/mittagskogel/sulfurous/issues/new?title=' + encodeURIComponent(P.player.projectTitle || P.player.projectURL) + '&body=' + encodeURIComponent('\n\n\n' + P.player.projectURL + '\nhttp://mittagskogel.github.io/#' + P.player.projectId + '\n' + navigator.userAgent) : 'https://github.com/mittagskogel/sulfurous/issues/new?body=' + encodeURIComponent('\n\n\n' + navigator.userAgent);
+    bugLink.href = P.player.projectId ? 'https://github.com/mittagskogel/sulfurous/issues/new?title=' + encodeURIComponent(P.player.projectTitle || P.player.projectURL) + '&body=' + encodeURIComponent('\n\n\n' + P.player.projectURL + '\nhttps://mittagskogel.github.io/#' + P.player.projectId + '\n' + navigator.userAgent) : 'https://github.com/mittagskogel/sulfurous/issues/new?body=' + encodeURIComponent('\n\n\n' + navigator.userAgent);
   }
 
   function updatePackageLink() {
