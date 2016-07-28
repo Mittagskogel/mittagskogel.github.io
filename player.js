@@ -1,9 +1,10 @@
 P.player = (function() {
   'use strict';
-
+  
+  var resolution;
+  
   var stage;
   var frameId = null;
-  //var isFullScreen = true;
   var isFullScreen = false;
 
   var progressBar = document.querySelector('.progress-bar');
@@ -22,6 +23,13 @@ P.player = (function() {
   var errorBugLink = document.querySelector('#error-bug-link');
 
   var flagTouchTimeout;
+
+  function setResolution(res){
+    resolution = res;
+    player.style.width = resolution + 'px';
+    player.style.height = resolution*3/4 + 'px'
+  } 
+  
   function flagTouchStart() {
     flagTouchTimeout = setTimeout(function() {
       turboClick();
@@ -130,7 +138,7 @@ P.player = (function() {
       document.body.style.marginTop = (window.innerHeight - h - padding) / 2 + 'px';
       stage.setZoom(w / 480);
     } else {
-      stage.setZoom(1);
+      stage.setZoom(resolution ? resolution/480 : 1);
     }
   }
 
@@ -174,7 +182,7 @@ P.player = (function() {
 
   function load(id, cb, titleCallback) {
     P.player.projectId = id;
-    P.player.projectURL = id ? 'https://scratch.mit.edu/projects/' + id + '/' : '';
+    P.player.projectURL = id ? 'http://scratch.mit.edu/projects/' + id + '/' : '';
 
     if (stage) {
       stage.stopAll();
@@ -200,7 +208,7 @@ P.player = (function() {
 
   function showError(e) {
     error.style.display = 'block';
-    errorBugLink.href = 'https://github.com/nathan/phosphorus/issues/new?title=' + encodeURIComponent(P.player.projectTitle || P.player.projectURL) + '&body=' + encodeURIComponent('\n\n\n' + P.player.projectURL + '\nhttps://phosphorus.github.io/#' + P.player.projectId + '\n' + navigator.userAgent + (e.stack ? '\n\n```\n' + e.stack + '\n```' : ''));
+    errorBugLink.href = 'https://github.com/nathan/phosphorus/issues/new?title=' + encodeURIComponent(P.player.projectTitle || P.player.projectURL) + '&body=' + encodeURIComponent('\n\n\n' + P.player.projectURL + '\nhttp://phosphorus.github.io/#' + P.player.projectId + '\n' + navigator.userAgent + (e.stack ? '\n\n```\n' + e.stack + '\n```' : ''));
     console.error(e.stack);
   }
 
@@ -222,10 +230,13 @@ P.player = (function() {
       }, 100);
 
       var zoom = stage ? stage.zoom : 1;
+      zoom = resolution ? resolution/480 : zoom;
+      
       window.stage = stage = s;
       stage.start();
       stage.setZoom(zoom);
-
+      //stage.setZoom(2);
+      
       stage.root.addEventListener('keydown', exitFullScreen);
       stage.handleError = showError;
 
@@ -248,7 +259,8 @@ P.player = (function() {
 
   return {
     load: load,
-    showProgress: showProgress
+    showProgress: showProgress,
+    setResolution: setResolution
   };
 
 }());

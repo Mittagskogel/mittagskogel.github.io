@@ -170,8 +170,8 @@ var P = (function() {
 
   var IO = {};
 
-  IO.PROJECT_URL = 'https://projects.scratch.mit.edu/internalapi/project/';
-  IO.ASSET_URL = 'https://cdn.assets.scratch.mit.edu/internalapi/asset/';
+  IO.PROJECT_URL = 'http://projects.scratch.mit.edu/internalapi/project/';
+  IO.ASSET_URL = 'http://cdn.assets.scratch.mit.edu/internalapi/asset/';
   IO.SOUNDBANK_URL = 'https://cdn.rawgit.com/LLK/scratch-flash/v429/src/soundbank/';
 
   IO.FONTS = {
@@ -218,7 +218,7 @@ var P = (function() {
       if (xhr.status === 200) {
         request.load(xhr.response);
       } else {
-        request.error(new Error('HTTPS ' + xhr.status + ': ' + xhr.statusText));
+        request.error(new Error('HTTP ' + xhr.status + ': ' + xhr.statusText));
       }
     };
     xhr.onerror = function() {
@@ -292,7 +292,7 @@ var P = (function() {
     var request = new CompositeRequest;
 
     request.defer = true;
-    request.add(P.IO.load('https://crossorigin.me/https://scratch.mit.edu/projects/' + id + '/').onLoad(function(data) {
+    request.add(P.IO.load('http://crossorigin.me/http://scratch.mit.edu/projects/' + id + '/').onLoad(function(data) {
       var m = /<title>\s*(.+?)(\s+on\s+Scratch)?\s*<\/title>/.exec(data);
       if (callback) request.onLoad(callback.bind(self));
       if (m) {
@@ -608,7 +608,7 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
   IO.fixSVG = function(svg, element) {
     if (element.nodeType !== 1) return element;
     if (element.nodeName.slice(0, 4).toLowerCase() === 'svg:') {
-      var newElement = document.createElementNS('https://www.w3.org/2000/svg', element.localName);
+      var newElement = document.createElementNS('http://www.w3.org/2000/svg', element.localName);
       var attributes = element.attributes;
       var newAttributes = newElement.attributes;
       for (var i = attributes.length; i--;) {
@@ -623,10 +623,9 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
       var font = element.getAttribute('font-family') || '';
       //Using only Helvetica for now because I can't figure out why the others aren't rendering on canvas.
       //Some text will be misaligned.
-      font = 'Helvetica';//IO.FONTS[font] || font;
+      font = IO.FONTS[font] || font;
       if (font) {
-        //element.setAttribute('font-family', font);
-        element.style['font-family'] = font;
+        element.setAttribute('font-family', font);
         if (font === 'Helvetica') element.style.fontWeight = 'bold';
       }
       var size = +element.getAttribute('font-size');
@@ -645,8 +644,9 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
         for (var i = 1, l = lines.length; i < l; i++) {
           var tspan = document.createElementNS(null, 'tspan');
           tspan.textContent = lines[i];
-          tspan.setAttribute('x', 1);//x);
-          tspan.setAttribute('y', 26+i*lineHeight*size);//y + size * i * lineHeight);
+          tspan.setAttribute('x', 5);//x);
+          tspan.setAttribute('y', size*(i+1)*lineHeight);//y + size * i * lineHeight);
+          tspan.setAttribute('id', 'ID' + Math.random());
           element.appendChild(tspan);
         }
       }
@@ -680,12 +680,13 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
         //var svg = div.firstElementChild;		
         var svg = new DOMParser().parseFromString(source, 'image/svg+xml').firstElementChild;
         if(svg.getAttribute('width') === '0' || svg.getAttribute('height') === '0'){
-          svg = document.createElementNS('https://www.w3.org/2000/svg', svg.localName);
+          svg = document.createElementNS('http://www.w3.org/2000/svg', svg.localName);
         }
         else svg = IO.fixSVG(svg, svg);
         
         //svg.style.visibility = 'hidden';
-        //svg.style.position = 'absolute';
+        //keep this to avoid overflow in embed.
+        svg.style.position = 'absolute';
         //svg.style.left = '-10000px';
         //svg.style.top = '-10000px';
         svg.style.width = 0;
@@ -701,35 +702,29 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
           //viewBox.width = 0;
           //viewBox.height = 0;
           var bb = svg.getBBox();
-          viewBox.width = svg.width.baseVal.value = Math.ceil(bb.x + bb.width + 10);
-          viewBox.height = svg.height.baseVal.value = Math.ceil(bb.y + bb.height + 10);		  
+          viewBox.width  = svg.width.baseVal.value = Math.ceil(bb.x + bb.width + 10);
+          viewBox.height = svg.height.baseVal.value = Math.ceil(bb.y + bb.height + 10);		
         }
+        
         //IO.fixSVG(svg, svg);
         //while (div.firstChild) div.removeChild(div.lastChild);
         //div.appendChild(svg);
         //svg.style.visibility = 'visible';
-        //svg.style.cssText = '';
-		
-        //var canvas = document.createElement('canvas');
+        svg.style.cssText = '';
+        svg.style['image-rendering'] = '-moz-crisp-edges';
+        svg.style['image-rendering'] = 'pixelated';
+        
+        //svg.style.overflow = 'visible';
+        //svg.style.width = '100%';
+        
         var request = new Request;
         var image = new Image;
-        //callback(image);
-        //svg.style.cssText = '';
-        // console.log(md5, 'data:image/svg+xml;base64,' + btoa(div.innerHTML.trim()));
-        //canvg(canvas, div.innerHTML.trim(), {
-        //  ignoreMouse: true,
-        //  ignoreAnimation: true,
-        //  ignoreClear: true,
-        //  renderCallback: function() {
-        //    image.src = canvas.toDataURL();
-        //  }
-        //});
-        //image.crossOrigin = 'anonymous';
-        //image.src = 'data:image/svg+xml;base64,' + btoa(div.innerHTML.trim());
-        var newSource = new XMLSerializer().serializeToString(svg)
+
+        var newSource = (new XMLSerializer()).serializeToString(svg)
         svg.id = 'svg' + Math.random();
         // console.log(md5, 'data:image/svg+xml;base64,' + btoa(source), 'data:image/svg+xml;base64,' + btoa(newSource));
         image.src = 'data:image/svg+xml;base64,' + btoa(newSource);       
+        //console.log(image);
         image.onload = function() {
           if (callback) callback(image);
           request.load();
@@ -909,7 +904,7 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
   };
 
   Base.prototype.setCostume = function(costume) {
-    if (typeof costume !== 'number') {
+    if (isNaN(parseInt(costume))){//typeof costume !== 'number') {
       costume = '' + costume;
       for (var i = 0; i < this.costumes.length; i++) {
         if (this.costumes[i].costumeName === costume) {
@@ -927,14 +922,13 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
         this.showPreviousCostume();
         return;
       }
-    }
-	//else{
-		var i = (Math.floor(costume) - 1 || this.currentCostumeIndex) % this.costumes.length;
-		if (i < 0) i += this.costumes.length;
+      return;
+    } 
+    var i = (Math.floor(parseInt(costume)) - 1 || this.currentCostumeIndex) % this.costumes.length;
+    if (i < 0) i += this.costumes.length;
 		this.currentCostumeIndex = i;
 		if (this.isStage) this.updateBackdrop();
 		if (this.saying) this.updateBubble();
-	//}
   };
 
   Base.prototype.setFilter = function(name, value) {
@@ -1079,7 +1073,7 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
     this.penContext = this.penCanvas.getContext('2d');
     this.penContext.lineCap = 'round';
     this.penContext.scale(SCALE, SCALE);
-
+    
     this.canvas = document.createElement('canvas');
     this.root.appendChild(this.canvas);
     this.canvas.width = SCALE * 480;
@@ -1279,7 +1273,7 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
     this.backdropContext.save();
     var s = this.zoom * SCALE * costume.scale;
     this.backdropContext.scale(s, s);
-    this.backdropContext.drawImage(costume.image, 0, 0);
+    this.backdropContext.drawImage(costume.image, 0, 0, costume.image.width/4, costume.image.height/4);
     this.backdropContext.restore();
   };
 
@@ -1584,12 +1578,13 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
         x -= .5;
         y -= .5;
       }
+
       context.strokeStyle = this.penCSS || 'hsl(' + this.penHue + ',' + this.penSaturation + '%,' + (this.penLightness > 100 ? 200 - this.penLightness : this.penLightness) + '%)';
       context.lineWidth = this.penSize;
       context.beginPath();
       context.moveTo(240 + ox, 180 - oy);
       context.lineTo(240 + x, 180 - y);
-      context.stroke();
+      context.stroke();    
     }
     if (this.saying) {
       this.updateBubble();
@@ -1603,18 +1598,18 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
     context.fillStyle = this.penCSS || 'hsl(' + this.penHue + ',' + this.penSaturation + '%,' + (this.penLightness > 100 ? 200 - this.penLightness : this.penLightness) + '%)';
 
 	if(this.penSize <= 2){
-	  context.fillRect(240 + x - this.penSize/2, 180 - y - this.penSize/2, this.penSize, this.penSize);
+	  context.fillRect(240 + x - this.penSize, 180 - y, this.penSize, this.penSize);
 	}
 	else{
-	   context.beginPath();
-      context.arc(240 + x, 180 - y, this.penSize / 2, 0, 2 * Math.PI, false);
-      context.fill();
+	  context.beginPath();
+    context.arc(240 + x, 180 - y, this.penSize / 2, 0, 2 * Math.PI, false);
+    context.fill();
 	}
   };
 
   Sprite.prototype.draw = function(context, noEffects) {
     var costume = this.costumes[this.currentCostumeIndex];
-
+    
     if (this.isDragging) {
       this.moveTo(this.dragOffsetX + this.stage.mouseX, this.dragOffsetY + this.stage.mouseY);
     }
@@ -1636,7 +1631,7 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
       if (!noEffects) context.globalAlpha = Math.max(0, Math.min(1, 1 - this.filters.ghost / 100));    
       
       //TODO: General Optimization
-      if(!noEffects){
+      if(this.filters.pixelate !== 0 || this.filters.mosaic !== 0 || this.filters.mosaic !== 0){
 
         var effectsCanvas = document.createElement('canvas');
         effectsCanvas.width = costume.image.width;
@@ -1797,11 +1792,11 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
         costumeCanvas.parentNode.removeChild(costumeCanvas);            
         }
         
-        context.drawImage(effectsCanvas, 0, 0);
+        context.drawImage(effectsCanvas, 0, 0, costume.image.width/4, costume.image.height/4);
         
         effectsCanvas.parentNode.removeChild(effectsCanvas);
       }
-      else context.drawImage(costume.image, 0, 0);
+      else context.drawImage(costume.image, 0, 0, costume.image.width/4, costume.image.height/4);
 
       context.restore();
     }
@@ -1839,7 +1834,7 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
       } else if (this.rotationStyle === 'leftRight' && this.direction < 0) {
         cx = -cx
       }
-      var d = costume.context.getImageData(cx * costume.bitmapResolution + costume.rotationCenterX, cy * costume.bitmapResolution + costume.rotationCenterY, 1, 1).data;
+      var d = costume.context.getImageData(cx * 4 * costume.bitmapResolution + costume.rotationCenterX * 4, cy * 4 * costume.bitmapResolution + costume.rotationCenterY * 4, 1, 1).data;
       return d[3] !== 0;
     } else if (thing === '_edge_') {
       var bounds = this.rotatedBounds();
@@ -2162,12 +2157,16 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
     if (!this.baseLayer.width || this.textLayer && !this.textLayer.width) {
       return;
     }
-    this.image.width = this.baseLayer.width;
-    this.image.height = this.baseLayer.height;
-
-    this.context.drawImage(this.baseLayer, 0, 0);
+    this.image.width = this.baseLayer.width*4;
+    this.image.height = this.baseLayer.height*4;
+    
+    this.context.mozImageSmoothingEnabled = false;
+    this.context.imageSmoothingEnabled = false;
+    this.context.msImageSmoothingEnabled = false;
+    
+    this.context.drawImage(this.baseLayer, 0, 0, this.image.width, this.image.height);
     if (this.textLayer) {
-      this.context.drawImage(this.textLayer, 0, 0);
+      this.context.drawImage(this.textLayer, 0, 0, this.image.width, this.image.height);
     }
     if (this.base.isStage && this.index == this.base.currentCostumeIndex) {
       setTimeout(function() {
@@ -2457,7 +2456,7 @@ function encodeAudio16bit(soundData, sampleRate, soundBuf) {
 
 P.compile = (function() {
   'use strict';
-
+  
   var LOG_PRIMITIVES;
   var DEBUG;
   // LOG_PRIMITIVES = true;
@@ -3170,6 +3169,7 @@ P.compile = (function() {
       } else if (block[0] === 'putPenUp') {
 
         source += 'S.isPenDown = false;\n';
+        source += 'S.dotPen();\n';
         source += 'S.penState = null;\n';
 
       } else if (block[0] === 'penColor:') {
@@ -3186,7 +3186,7 @@ P.compile = (function() {
         source += 'S.penSaturation = 100;\n';
 
       } else if (block[0] === 'changePenHueBy:') {
-
+        
         source += noRGB;
         source += 'S.penHue += ' + num(block[1]) + ' * 360 / 200;\n';
         source += 'S.penSaturation = 100;\n';
@@ -3589,7 +3589,7 @@ P.compile = (function() {
     warnings = Object.create(null);
 
     compileScripts(stage);
-
+    
     for (var i = 0; i < stage.children.length; i++) {
       if (!stage.children[i].cmd) {
         compileScripts(stage.children[i]);
@@ -3599,7 +3599,6 @@ P.compile = (function() {
     for (var key in warnings) {
       console.warn(key + (warnings[key] > 1 ? ' (repeated ' + warnings[key] + ' times)' : ''));
     }
-
   };
 
 }());
