@@ -1,1 +1,1 @@
-Please see [https://github.com/Mittagskogel/Sulfurous](this) repository.
+Please see [this](https://github.com/Mittagskogel/Sulfurous) repository.
