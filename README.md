@@ -1,1 +1,1 @@
-[phosphorus.github.io](http://phosphorus.github.io)
+Please see [https://github.com/Mittagskogel/Sulfurous](this) repository.
